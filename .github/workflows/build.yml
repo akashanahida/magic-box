@@ -15,9 +15,9 @@ jobs:
         run: |
           echo version=$(curl -s https://raw.githubusercontent.com/actions/go-versions/update-versions-manifest-file/versions-manifest.json | grep -oE '"version": "[0-9]{1}.[0-9]{1,}(.[0-9]{1,})?"' | head -1 | cut -d':' -f2 | sed 's/ //g; s/"//g') >> $GITHUB_OUTPUT
 
-      - name: Clone reF1nd sing-box source
-        run: |
-          git clone -b reF1nd-dev https://github.com/reF1nd/sing-box.git .          
+      # - name: Clone reF1nd sing-box source
+      #   run: |
+      #     git clone -b reF1nd-dev https://github.com/reF1nd/sing-box.git .          
 
   sing-box:
     runs-on: ubuntu-latest
@@ -25,8 +25,11 @@ jobs:
     outputs:
       version: ${{steps.sing-box.outputs.version}}
     steps:
-      - uses: actions/checkout@v4.1.7
+      - name: Checkout reF1nd/sing-box reF1nd-dev branch
+        uses: actions/checkout@v4
         with:
+          repository: reF1nd/sing-box # 指定要克隆的仓库
+          ref: reF1nd-dev           # 指定要克隆的分支
           fetch-depth: 0
 
       - name: setup go
@@ -72,8 +75,11 @@ jobs:
       VERSION: ${{ needs.sing-box.outputs.version }}
       SUFFIX: ${{ matrix.jobs.goos == 'windows' && '.exe' || '' }}
     steps:
-      - uses: actions/checkout@v4.1.7
+      - name: Checkout reF1nd/sing-box reF1nd-dev branch
+        uses: actions/checkout@v4
         with:
+          repository: reF1nd/sing-box # 指定要克隆的仓库
+          ref: reF1nd-dev           # 指定要克隆的分支
           fetch-depth: 0
           
       - name: setup go
