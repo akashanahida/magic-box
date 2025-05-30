@@ -1,19 +1,25 @@
-name: Build APK
+name: Build Unsigned APK
 
 on:
-  workflow_dispatch:  # 手动触发构建
+  workflow_dispatch:  # 手动触发
 
 jobs:
   build-apk:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout CherryHQ/cherry-studio-app
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
-          repository: CherryHQ/cherry-studio-app # 指定要克隆的仓库
-          ref: main           # 指定要克隆的分支
+          repository: CherryHQ/cherry-studio-app
+          ref: main
           fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -25,20 +31,25 @@ jobs:
           curl -fsSL https://bun.sh/install | bash
           echo "${HOME}/.bun/bin" >> $GITHUB_PATH
 
-      - name: Install EAS CLI
-        run: npm install -g eas-cli
-
       - name: Install dependencies
         run: bun install
 
-      - name: Build APK
-        run: eas build --platform android --non-interactive --local
+      - name: Install Expo CLI
+        run: bun add --global expo-cli
+
+      - name: Run `expo prebuild` to generate android project
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Grant Gradle permission
+        run: chmod +x ./android/gradlew
+
+      - name: Build unsigned APK with Gradle
+        working-directory: android
+        run: ./gradlew assembleRelease
 
       - name: Upload APK artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: apk-build-output
-          path: |
-            dist
-            ./**/build/**/outputs/**/*.apk
+          path: android/app/build/outputs/**/*.apk
