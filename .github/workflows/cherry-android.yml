@@ -45,7 +45,7 @@ jobs:
 
       - name: Build unsigned APK with Gradle
         working-directory: android
-        run: ./gradlew assembleRelease --parallel --build-cache
+        run: ./gradlew assembleRelease --build-cache
 
       - name: Upload APK artifact
         if: always()
