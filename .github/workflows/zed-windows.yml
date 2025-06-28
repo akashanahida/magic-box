@@ -1,0 +1,70 @@
+# 工作流程的名称，将显示在 GitHub Actions 页面
+name: Build Zed on Windows
+
+# 控制工作流程的触发时机
+on:
+  # 允许手动从 Actions 页面触发此工作流程
+  workflow_dispatch:
+
+# 定义工作流程中的任务（jobs）
+jobs:
+  # 定义一个名为 "build" 的任务
+  build:
+    # 指定任务运行在 GitHub 托管的最新版 Windows 虚拟机上
+    runs-on: windows-latest
+
+    # 任务的执行步骤
+    steps:
+      # 步骤 1: 根据 Zed Windows 构建文档，启用长路径支持以防止构建失败
+      - name: Enable long paths for Git
+        run: git config --system core.longpaths true
+
+      - name: Enable long paths for Windows
+        # 此命令需要管理员权限，在 GitHub Actions 的 runner 中默认拥有
+        run: New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+
+      # 步骤 2: 检出 zed-industries/zed 仓库的代码 [<sup data-citation='{&quot;id&quot;:9,&quot;url&quot;:&quot;https://juejin.cn/post/6978436693485420575&quot;,&quot;title&quot;:&quot;06.Git从放弃到入门： 命令checkout图解&quot;,&quot;content&quot;:&quot;前言 -- git checkout 命令用来切换分支，或者检出内容到工作目录。本文通过图文结合方式讲解其功能和工作原理。 本系列更多文章详见专栏 📚 Git从放弃到入门 。 项目初始化 接下来结合上篇分支里面的知识点，通过图解的方式来说明命令调用后发生了什么操作！ 首先初始化一个项目，用于后续示例演示。创建两个分支一个 master 和 dev 。项目目录下有两个文件filetxt、Readm&quot;}'>9</sup>](https://juejin.cn/post/6978436693485420575)
+      # 使用 `repository` 参数指定要拉取的仓库 [<sup data-citation='{&quot;id&quot;:7,&quot;url&quot;:&quot;https://zed.dev/blog/git&quot;,&quot;title&quot;:&quot;Native Git support in Zed - Zed Blog&quot;,&quot;content&quot;:&quot;Weve heard for a long time that many of you want to be able to use Git from within Zed Not necessarily for everything, but particularly for the 90 git-commit, git-push workflow, its just too slow to h&quot;}'>7</sup>](https://zed.dev/blog/git)[<sup data-citation='{&quot;id&quot;:12,&quot;url&quot;:&quot;https://github.com/zed-industries/zed&quot;,&quot;title&quot;:&quot;GitHub - zed-industries/zed: Code at the speed of thought – Zed is a high-performance, multiplayer code editor from the creators of Atom and Tree-sitter.&quot;,&quot;content&quot;:&quot;Zed Welcome to Zed, a high-performance, multiplayer code editor from the creators of Atom and Tree-sitter Installation On macOS and Linux you can download Zed directly or install Zed via your local pa&quot;}'>12</sup>](https://github.com/zed-industries/zed)
+      - name: Checkout zed-industries/zed repository
+        uses: actions/checkout@v4
+        with:
+          repository: 'zed-industries/zed'
+
+      # 步骤 3: 安装 Rust 工具链
+      # 这个 action 会自动读取仓库中的 `rust-toolchain.toml` 文件来安装正确的 Rust 版本
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      # 步骤 4: 缓存 Cargo 依赖项以加快后续构建速度
+      # 通过缓存，不必每次都重新下载和编译所有依赖
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      # 步骤 5: 构建项目
+      # 使用 `cargo build` 命令进行发布模式的构建，--verbose 参数可以提供更详细的日志输出
+      - name: Build Zed
+        run: cargo build --release --verbose
+
+      # 步骤 6: 运行测试
+      # 执行工作空间中的所有测试，确保代码的正确性
+      - name: Run tests
+        run: cargo test --workspace --release --no-fail-fast
+
+      # 步骤 7: 上传构建产物
+      # 将编译好的 zed.exe 文件作为名为 "zed-windows" 的构件上传
+      # 这样就可以在工作流程运行结束后下载和使用它
+      - name: Upload Zed artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zed-windows
+          path: target/release/zed.exe
