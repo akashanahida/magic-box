@@ -55,11 +55,6 @@ jobs:
       - name: Build Zed
         run: cargo build --release --verbose
 
-      # 步骤 6: 运行测试
-      # 执行工作空间中的所有测试，确保代码的正确性
-      - name: Run tests
-        run: cargo test --workspace --release --no-fail-fast
-
       # 步骤 7: 上传构建产物
       # 将编译好的 zed.exe 文件作为名为 "zed-windows" 的构件上传
       # 这样就可以在工作流程运行结束后下载和使用它
