@@ -28,8 +28,8 @@ jobs:
       - name: Checkout reF1nd/sing-box reF1nd-dev branch
         uses: actions/checkout@v4
         with:
-          #repository: reF1nd/sing-box
-          repository: akashanahida/god-box
+          repository: reF1nd/sing-box
+          #repository: akashanahida/god-box
           ref: reF1nd-dev
           fetch-depth: 0
 
