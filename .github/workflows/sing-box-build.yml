@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
   # push:
 
+env:
+  CHECKOUT_REPO: reF1nd/sing-box
+  CHECKOUT_REF: reF1nd-main
+
 jobs:
   go:
     runs-on: ubuntu-latest
@@ -14,7 +18,7 @@ jobs:
         id: go
         run: |
           echo version=$(curl -s https://raw.githubusercontent.com/actions/go-versions/update-versions-manifest-file/versions-manifest.json \
-            | grep -oE '"version": "[0-9]{1}.[0-9]{1,}(.[0-9]{1,})?"' \
+            | grep -oE '"version": "[0-9]{1}\.[0-9]{1,}(\.[0-9]{1,})?"' \
             | head -1 \
             | cut -d':' -f2 \
             | sed 's/ //g; s/"//g') >> $GITHUB_OUTPUT
@@ -25,12 +29,11 @@ jobs:
     outputs:
       version: ${{ steps.sing-box.outputs.version }}
     steps:
-      - name: Checkout reF1nd/sing-box reF1nd-dev branch
+      - name: Checkout ${{ env.CHECKOUT_REPO }} @ ${{ env.CHECKOUT_REF }}
         uses: actions/checkout@v4
         with:
-          repository: reF1nd/sing-box
-          #repository: akashanahida/god-box
-          ref: reF1nd-dev
+          repository: ${{ env.CHECKOUT_REPO }}
+          ref: ${{ env.CHECKOUT_REF }}
           fetch-depth: 0
 
       - name: setup go
@@ -78,12 +81,11 @@ jobs:
       SUFFIX: ${{ matrix.jobs.goos == 'windows' && '.exe' || '' }}
 
     steps:
-      - name: Checkout reF1nd/sing-box reF1nd-dev branch
+      - name: Checkout ${{ env.CHECKOUT_REPO }} @ ${{ env.CHECKOUT_REF }}
         uses: actions/checkout@v4
         with:
-          #repository: reF1nd/sing-box
-          repository: akashanahida/god-box
-          ref: reF1nd-dev
+          repository: ${{ env.CHECKOUT_REPO }}
+          ref: ${{ env.CHECKOUT_REF }}
           fetch-depth: 0
 
       - name: setup go
@@ -104,32 +106,12 @@ jobs:
           echo "CC=${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.jobs.ndk }}-clang" \
             >> $GITHUB_ENV
 
-      - name: build both-side core
+      - name: build sing-box
         env:
           TAGS: with_quic,with_dhcp,with_wireguard,with_tailscale,with_utls,with_acme,with_clash_api,with_gvisor
         run: |
           go build \
-            -o sing-box-both-side${{ env.SUFFIX }} \
-            -v -trimpath \
-            -ldflags "-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -s -w -buildid=" \
-            -tags "${TAGS}" ./cmd/sing-box
-
-      - name: build client core
-        env:
-          TAGS: with_quic,with_dhcp,with_wireguard,with_tailscale,with_utls,with_clash_api,with_gvisor
-        run: |
-          go build \
-            -o sing-box-client${{ env.SUFFIX }} \
-            -v -trimpath \
-            -ldflags "-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -s -w -buildid=" \
-            -tags "${TAGS}" ./cmd/sing-box
-
-      - name: build server core
-        env:
-          TAGS: with_quic,with_dhcp,with_wireguard,with_tailscale,with_utls,with_acme,with_gvisor
-        run: |
-          go build \
-            -o sing-box-server${{ env.SUFFIX }} \
+            -o sing-box${{ env.SUFFIX }} \
             -v -trimpath \
             -ldflags "-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -s -w -buildid=" \
             -tags "${TAGS}" ./cmd/sing-box
@@ -139,7 +121,5 @@ jobs:
         with:
           name: sing-box-${{ env.VERSION }}-${{ env.GOOS }}-${{ matrix.jobs.output }}
           path: |
-            sing-box-client${{ env.SUFFIX }}
-            sing-box-server${{ env.SUFFIX }}
-            sing-box-both-side${{ env.SUFFIX }}
+            sing-box${{ env.SUFFIX }}
           compression-level: 9
