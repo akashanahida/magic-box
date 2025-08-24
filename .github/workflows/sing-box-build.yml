@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - '.github/workflows/sing-box-build.yml'
-      
+      - '.github/workflows/sing-box-build.yml'  
+
 permissions:
   contents: write
 
@@ -131,6 +131,25 @@ jobs:
         with:
           path: artifacts
 
+      - name: Prepare artifacts for release
+        run: |
+          mkdir -p release
+          find artifacts -name "sing-box*" -type f | while read file; do
+            # 获取目录名作为平台标识
+            platform=$(basename $(dirname "$file"))
+            platform=${platform#sing-box-*}  # 移除前缀 "sing-box-"
+            
+            # 获取文件扩展名
+            if [[ "$file" == *.exe ]]; then
+              cp "$file" "release/sing-box-${platform}.exe"
+            else
+              cp "$file" "release/sing-box-${platform}"
+            fi
+          done
+          
+          # 列出准备上传的文件
+          ls -la release/
+
       - name: Create / Update prerelease "sing" and upload artifacts
         uses: ncipollo/release-action@v1
         with:
@@ -140,6 +159,6 @@ jobs:
           draft: false
           prerelease: true
           commit: ${{ github.sha }}
-          artifacts: "artifacts/**"
+          artifacts: "release/*"
           allowUpdates: true
           replacesArtifacts: true
