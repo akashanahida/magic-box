@@ -2,7 +2,10 @@ name: Build Sing-Box Cores
 
 on:
   workflow_dispatch:
-
+  push:
+    paths:
+      - '.github/workflows/sing-box-build.yml'
+      
 permissions:
   contents: write
 
@@ -136,6 +139,7 @@ jobs:
           body: "Pre-release for sing-box ${{ needs.sing-box.outputs.version }}"
           draft: false
           prerelease: true
-          commitish: ${{ github.sha }}
-          files: artifacts/**
-          overwrite: true
+          commit: ${{ github.sha }}
+          artifacts: "artifacts/**"
+          allowUpdates: true
+          replacesArtifacts: true
