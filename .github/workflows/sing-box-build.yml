@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - '.github/workflows/sing-box-build.yml'  
+      - '.github/workflows/sing-box-build.yml'
 
 permissions:
   contents: write
@@ -135,9 +135,12 @@ jobs:
         run: |
           mkdir -p release
           find artifacts -name "sing-box*" -type f | while read file; do
-            # 获取目录名作为平台标识
-            platform=$(basename $(dirname "$file"))
-            platform=${platform#sing-box-*}  # 移除前缀 "sing-box-"
+            # 获取目录名并提取平台信息
+            dirname=$(basename $(dirname "$file"))
+            
+            # 提取操作系统和架构，去掉版本号
+            # 从 sing-box-1.12.3-reF1nd-linux-amd64 中提取 linux-amd64
+            platform=$(echo "$dirname" | sed -E 's/sing-box-[0-9]+\.[0-9]+\.[0-9]+-[^-]+-//')
             
             # 获取文件扩展名
             if [[ "$file" == *.exe ]]; then
@@ -155,7 +158,7 @@ jobs:
         with:
           tag: sing
           name: sing
-          body: "Pre-release for sing-box ${{ needs.sing-box.outputs.version }}"
+          body: "Pre-release for sing"
           draft: false
           prerelease: true
           commit: ${{ github.sha }}
