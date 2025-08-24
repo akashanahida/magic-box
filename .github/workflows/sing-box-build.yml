@@ -2,7 +2,9 @@ name: Build Sing-Box Cores
 
 on:
   workflow_dispatch:
-  # push:
+
+permissions:
+  contents: write
 
 env:
   CHECKOUT_REPO: reF1nd/sing-box
@@ -51,25 +53,18 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    needs:
+    needs: 
       - go
       - sing-box
     strategy:
       matrix:
         jobs:
-          # android
-          - { goos: android,  goarch: arm64, goarm: ,      ndk: aarch64-linux-android35, output: arm64-v8a }
-
-          # linux
-          - { goos: linux,    goarch: arm64, goarm: ,      output: arm64 }
-          - { goos: linux,    goarch: amd64, goamd64: v1,  goarm: , output: amd64 }
-          - { goos: linux,    goarch: amd64, goamd64: v3,  goarm: , output: amd64v3 }
-          - { goos: linux,    goarch: arm,   goarm: 7,     output: armv7 }   # ← 新增 linux/armv7
-
-          # windows
-          - { goos: windows,  goarch: amd64, goamd64: v1,  goarm: , output: amd64 }
-          - { goos: windows,  goarch: amd64, goamd64: v3,  goarm: , output: amd64v3 }
-
+          - { goos: linux, goarch: arm64, goarm: , output: arm64 }
+          - { goos: linux, goarch: amd64, goamd64: v1, goarm: , output: amd64 }
+          - { goos: linux, goarch: amd64, goamd64: v3, goarm: , output: amd64v3 }
+          - { goos: linux, goarch: arm, goarm: 7, output: armv7 }
+          - { goos: windows, goarch: amd64, goamd64: v1, goarm: , output: amd64 }
+          - { goos: windows, goarch: amd64, goamd64: v3, goarm: , output: amd64v3 }
     env:
       GOOS: ${{ matrix.jobs.goos }}
       GOARCH: ${{ matrix.jobs.goarch }}
@@ -79,7 +74,6 @@ jobs:
       CGO_ENABLED: ${{ matrix.jobs.goos == 'android' && 1 || 0 }}
       VERSION: ${{ needs.sing-box.outputs.version }}
       SUFFIX: ${{ matrix.jobs.goos == 'windows' && '.exe' || '' }}
-
     steps:
       - name: Checkout ${{ env.CHECKOUT_REPO }} @ ${{ env.CHECKOUT_REF }}
         uses: actions/checkout@v4
@@ -103,8 +97,7 @@ jobs:
       - name: Setup CC ENV
         if: ${{ matrix.jobs.goos == 'android' }}
         run: |
-          echo "CC=${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.jobs.ndk }}-clang" \
-            >> $GITHUB_ENV
+          echo "CC=${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.jobs.ndk }}-clang" >> $GITHUB_ENV
 
       - name: build sing-box
         env:
@@ -123,3 +116,26 @@ jobs:
           path: |
             sing-box${{ env.SUFFIX }}
           compression-level: 9
+
+  release:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - sing-box
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create / Update prerelease "sing" and upload artifacts
+        uses: ncipollo/release-action@v1
+        with:
+          tag: sing
+          name: sing
+          body: "Pre-release for sing-box ${{ needs.sing-box.outputs.version }}"
+          draft: false
+          prerelease: true
+          commitish: ${{ github.sha }}
+          files: artifacts/**
+          overwrite: true
