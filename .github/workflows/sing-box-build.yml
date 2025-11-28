@@ -2,9 +2,8 @@ name: Build Sing-Box Cores
 
 on: 
   workflow_dispatch: 
-  # push: 
+  push: 
 
-# 在这里定义全局变量，可以直接在 YAML 中修改
 env:
   TARGET_REPO: reF1nd/sing-box
   TARGET_REF: reF1nd-dev
@@ -18,11 +17,10 @@ jobs:
       - name: get latest go version
         id: go
         run: | 
-          echo version=$(curl -s https://raw.githubusercontent.com/actions/go-versions/update-versions-manifest-file/versions-manifest.json \ 
-            | grep -oE '"version": "[0-9]{1}.[0-9]{1,}(.[0-9]{1,})?"' \ 
-            | head -1 \ 
-            | cut -d':' -f2 \ 
-            | sed 's/ //g; s/"//g') >> $GITHUB_OUTPUT
+          # 使用更稳健的写法获取版本号
+          MANIFEST_URL="https://raw.githubusercontent.com/actions/go-versions/update-versions-manifest-file/versions-manifest.json"
+          VERSION=$(curl -s "$MANIFEST_URL" | grep -oE '"version": "[0-9]{1}.[0-9]{1,}(.[0-9]{1,})?"' | head -1 | cut -d':' -f2 | sed 's/ //g; s/"//g')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
   sing-box: 
     runs-on: ubuntu-latest
@@ -65,7 +63,7 @@ jobs:
           - { goos: linux,    goarch: arm64, goarm: ,      output: arm64 } 
           - { goos: linux,    goarch: amd64, goamd64: v1,  goarm: , output: amd64 } 
           - { goos: linux,    goarch: amd64, goamd64: v3,  goarm: , output: amd64v3 } 
-          - { goos: linux,    goarch: arm,   goarm: 7,     output: armv7 }   # ← 新增 linux/armv7
+          - { goos: linux,    goarch: arm,   goarm: 7,     output: armv7 } 
 
           # windows
           - { goos: windows,  goarch: amd64, goamd64: v1,  goarm: , output: amd64 } 
