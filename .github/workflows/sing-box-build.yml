@@ -2,7 +2,7 @@ name: Build Sing-Box Cores
 
 on: 
   workflow_dispatch: 
-  push: 
+  # push: 
 
 env:
   TARGET_REPO: reF1nd/sing-box
@@ -17,7 +17,6 @@ jobs:
       - name: get latest go version
         id: go
         run: | 
-          # 使用更稳健的写法获取版本号
           MANIFEST_URL="https://raw.githubusercontent.com/actions/go-versions/update-versions-manifest-file/versions-manifest.json"
           VERSION=$(curl -s "$MANIFEST_URL" | grep -oE '"version": "[0-9]{1}.[0-9]{1,}(.[0-9]{1,})?"' | head -1 | cut -d':' -f2 | sed 's/ //g; s/"//g')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
@@ -102,38 +101,22 @@ jobs:
       - name: Setup CC ENV
         if: ${{ matrix.jobs.goos == 'android' }} 
         run: | 
-          echo "CC=${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.jobs.ndk }}-clang" \ 
-            >> $GITHUB_ENV
+          echo "CC=${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.jobs.ndk }}-clang" >> $GITHUB_ENV
 
       - name: build both-side core
         env: 
           TAGS: with_quic,with_dhcp,with_wireguard,with_tailscale,with_utls,with_acme,with_clash_api,with_gvisor
-        run: | 
-          go build \ 
-            -o sing-box-both-side${{ env.SUFFIX }} \ 
-            -v -trimpath \ 
-            -ldflags "-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -s -w -buildid=" \ 
-            -tags "${TAGS}" ./cmd/sing-box
+        run: go build -o sing-box-both-side${{ env.SUFFIX }} -v -trimpath -ldflags "-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${TAGS}" ./cmd/sing-box
 
       - name: build client core
         env: 
           TAGS: with_quic,with_dhcp,with_wireguard,with_tailscale,with_utls,with_clash_api,with_gvisor
-        run: | 
-          go build \ 
-            -o sing-box-client${{ env.SUFFIX }} \ 
-            -v -trimpath \ 
-            -ldflags "-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -s -w -buildid=" \ 
-            -tags "${TAGS}" ./cmd/sing-box
+        run: go build -o sing-box-client${{ env.SUFFIX }} -v -trimpath -ldflags "-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${TAGS}" ./cmd/sing-box
 
       - name: build server core
         env: 
           TAGS: with_quic,with_dhcp,with_wireguard,with_tailscale,with_utls,with_acme,with_gvisor
-        run: | 
-          go build \ 
-            -o sing-box-server${{ env.SUFFIX }} \ 
-            -v -trimpath \ 
-            -ldflags "-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -s -w -buildid=" \ 
-            -tags "${TAGS}" ./cmd/sing-box
+        run: go build -o sing-box-server${{ env.SUFFIX }} -v -trimpath -ldflags "-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${TAGS}" ./cmd/sing-box
 
       - name: upload core
         uses: actions/upload-artifact@v4.3.6
