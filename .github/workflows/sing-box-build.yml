@@ -11,7 +11,7 @@ permissions:
 
 env:
   CHECKOUT_REPO: reF1nd/sing-box
-  CHECKOUT_REF: reF1nd-main
+  CHECKOUT_REF: reF1nd-dev
 
 jobs:
   go:
