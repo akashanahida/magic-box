@@ -1,8 +1,9 @@
 name: Build Sing-Box Cores
 
 on:
-  workflow_dispatch:
   push:
+  workflow_dispatch:
+  
 
 
 env:
